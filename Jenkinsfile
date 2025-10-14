@@ -1,11 +1,11 @@
 pipeline {
-    agent any
+    agent { label 'php-slave' }
 
     environment {
         DOCKER_IMAGE = "php-app:latest"
         REPO_URL = "https://github.com/marypaulm/projCert.git"
 
-        // Ansible
+        // Ansible paths (make sure these exist on your slave)
         ANSIBLE_INVENTORY = "/home/ubuntu/ansible/hosts"
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
     }
@@ -54,10 +54,10 @@ pipeline {
 
     post {
         success {
-            echo "Build, test, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
+            echo "✅ Build, test, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
         }
         failure {
-            echo "Pipeline failed on branch ${env.BRANCH_NAME}. Check Jenkins console for details."
+            echo "❌ Pipeline failed on branch ${env.BRANCH_NAME}. Check Jenkins console for details."
         }
     }
 }
