@@ -2,10 +2,9 @@ pipeline {
     agent { label 'php-slave' }
 
     environment {
-        DOCKER_IMAGE = "php-app:latest"
+        DOCKER_IMAGE = "php-app:${env.BRANCH_NAME}"
         REPO_URL = "https://github.com/marypaulm/projCert.git"
 
-        // Ansible paths (make sure these exist on your slave)
         ANSIBLE_INVENTORY = "/home/ubuntu/ansible/hosts"
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
     }
@@ -21,14 +20,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image from website folder..."
-                sh 'docker build -t $DOCKER_IMAGE ./website'
+                sh 'sudo docker build -t $DOCKER_IMAGE ./website'
             }
         }
 
         stage('Test Docker Image') {
             steps {
                 echo "Running test container to verify PHP..."
-                sh 'docker run --rm $DOCKER_IMAGE php -v'
+                sh 'sudo docker run --rm $DOCKER_IMAGE php -v'
             }
         }
 
