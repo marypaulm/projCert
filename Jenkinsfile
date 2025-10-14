@@ -53,10 +53,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build, test, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
+            echo "Build, test, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
         }
         failure {
-            echo "❌ Pipeline failed on branch ${env.BRANCH_NAME}. Check Jenkins console for details."
+            echo "Pipeline failed on branch ${env.BRANCH_NAME}. Check Jenkins console for details."
         }
     }
 }
