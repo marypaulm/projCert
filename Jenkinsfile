@@ -49,11 +49,37 @@ pipeline {
                 }
             }
         }
+
+        stage('Run Application on Server') {
+            steps {
+                script {
+                    echo "Starting application container on server..."
+                    sh """
+                        if [ "${env.BRANCH_NAME}" == "dev" ]; then
+                            TARGET=dev
+                        elif [ "${env.BRANCH_NAME}" == "stage" ]; then
+                            TARGET=stage
+                        elif [ "${env.BRANCH_NAME}" == "master" ]; then
+                            TARGET=prod
+                        else
+                            echo "No target for branch ${env.BRANCH_NAME}, skipping run."
+                            exit 0
+                        fi
+
+                        ansible -i $ANSIBLE_INVENTORY $TARGET -m shell -a '
+                            sudo docker stop php-app-${env.BRANCH_NAME} || true
+                            sudo docker rm php-app-${env.BRANCH_NAME} || true
+                            sudo docker run -d --name php-app-${env.BRANCH_NAME} -p 80:80 $DOCKER_IMAGE
+                        '
+                    """
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "Build, test, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
+            echo "Build, test, deployment, and application start completed successfully on branch ${env.BRANCH_NAME}!"
         }
         failure {
             echo "Pipeline failed on branch ${env.BRANCH_NAME}. Check Jenkins console for details."
