@@ -9,7 +9,7 @@ pipeline {
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
         ANSIBLE_KEY = "/home/ubuntu/.ssh/terraform-ec2-key.pem"
         ANSIBLE_USER = "ubuntu"
-        IMAGE_TAR = "${env.WORKSPACE}/php-app_${env.BRANCH_NAME}.tar" // Save in workspace
+        IMAGE_TAR = "${env.WORKSPACE}/php-app_${env.BRANCH_NAME}.tar"
     }
 
     stages {
@@ -47,7 +47,6 @@ pipeline {
         stage('Deploy via Ansible') {
             steps {
                 script {
-                    // Map branch names to inventory groups
                     def envMap = ['dev':'dev', 'stage':'stage', 'master':'prod']
                     def target = envMap[env.BRANCH_NAME]
 
