@@ -9,7 +9,7 @@ pipeline {
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
         ANSIBLE_KEY = "/home/ubuntu/.ssh/terraform-ec2-key.pem"
         ANSIBLE_USER = "ubuntu"
-        IMAGE_TAR = "/tmp/php-app_${env.BRANCH_NAME}.tar"
+        IMAGE_TAR = "${env.WORKSPACE}/php-app_${env.BRANCH_NAME}.tar" // Save in workspace
     }
 
     stages {
@@ -37,7 +37,10 @@ pipeline {
         stage('Save Docker Image for Deployment') {
             steps {
                 echo "Saving Docker image to tar for Ansible transfer..."
-                sh "sudo docker save $DOCKER_IMAGE -o $IMAGE_TAR"
+                sh """
+                    sudo docker save $DOCKER_IMAGE -o $IMAGE_TAR
+                    sudo chown ubuntu:ubuntu $IMAGE_TAR
+                """
             }
         }
 
