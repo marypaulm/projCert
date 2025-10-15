@@ -9,6 +9,7 @@ pipeline {
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
         ANSIBLE_KEY = "/home/ubuntu/.ssh/terraform-ec2-key.pem"
         ANSIBLE_USER = "ubuntu"
+        IMAGE_TAR = "/tmp/php-app_${env.BRANCH_NAME}.tar"
     }
 
     stages {
@@ -22,14 +23,21 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image from website folder..."
-                sh 'sudo docker build -t $DOCKER_IMAGE ./website'
+                sh "sudo docker build -t $DOCKER_IMAGE ./website"
             }
         }
 
         stage('Test Docker Image') {
             steps {
                 echo "Running test container to verify PHP..."
-                sh 'sudo docker run --rm $DOCKER_IMAGE php -v'
+                sh "sudo docker run --rm $DOCKER_IMAGE php -v"
+            }
+        }
+
+        stage('Save Docker Image for Deployment') {
+            steps {
+                echo "Saving Docker image to tar for Ansible transfer..."
+                sh "sudo docker save $DOCKER_IMAGE -o $IMAGE_TAR"
             }
         }
 
@@ -41,14 +49,15 @@ pipeline {
                     def target = envMap[env.BRANCH_NAME]
 
                     if (target) {
-                        echo "Deploying to ${target.toUpperCase()} server"
+                        echo "Deploying to ${target.toUpperCase()} server(s)"
                         sh """
                             ansible-playbook -i $ANSIBLE_INVENTORY \
                             $ANSIBLE_PLAYBOOK \
                             --limit ${target} \
                             -u $ANSIBLE_USER \
                             --private-key=$ANSIBLE_KEY \
-                            -e target_env=${target}
+                            -e target_env=${target} \
+                            -e image_tar=$IMAGE_TAR
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
