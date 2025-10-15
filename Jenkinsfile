@@ -36,11 +36,18 @@ pipeline {
         stage('Push Docker Image to ECR') {
             steps {
                 echo "Tagging and pushing Docker image to ECR..."
-                sh """
-                    aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 381492070404.dkr.ecr.eu-central-1.amazonaws.com
-                    docker tag $DOCKER_IMAGE $ECR_URI:${env.BRANCH_NAME}
-                    docker push $ECR_URI:${env.BRANCH_NAME}
-                """
+                withCredentials([usernamePassword(
+                    credentialsId: 'awsecrlogin',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    sh """
+                        aws ecr get-login-password --region eu-central-1 | \
+                        docker login --username AWS --password-stdin 381492070404.dkr.ecr.eu-central-1.amazonaws.com
+                        docker tag $DOCKER_IMAGE $ECR_URI:${env.BRANCH_NAME}
+                        docker push $ECR_URI:${env.BRANCH_NAME}
+                    """
+                }
             }
         }
 
