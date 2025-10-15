@@ -4,12 +4,11 @@ pipeline {
     environment {
         DOCKER_IMAGE = "php-app:${env.BRANCH_NAME}"
         REPO_URL = "https://github.com/marypaulm/projCert.git"
-
+        ECR_URI = "381492070404.dkr.ecr.eu-central-1.amazonaws.com/php-app"
         ANSIBLE_INVENTORY = "/home/ubuntu/ansible/hosts"
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
         ANSIBLE_KEY = "/home/ubuntu/.ssh/terraform-ec2-key.pem"
         ANSIBLE_USER = "ubuntu"
-        IMAGE_TAR = "${env.WORKSPACE}/php-app_${env.BRANCH_NAME}.tar"
     }
 
     stages {
@@ -34,12 +33,13 @@ pipeline {
             }
         }
 
-        stage('Save Docker Image for Deployment') {
+        stage('Push Docker Image to ECR') {
             steps {
-                echo "Saving Docker image to tar for Ansible transfer..."
+                echo "Tagging and pushing Docker image to ECR..."
                 sh """
-                    sudo docker save $DOCKER_IMAGE -o $IMAGE_TAR
-                    sudo chown ubuntu:ubuntu $IMAGE_TAR
+                    aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 381492070404.dkr.ecr.eu-central-1.amazonaws.com
+                    docker tag $DOCKER_IMAGE $ECR_URI:${env.BRANCH_NAME}
+                    docker push $ECR_URI:${env.BRANCH_NAME}
                 """
             }
         }
@@ -59,7 +59,7 @@ pipeline {
                             -u $ANSIBLE_USER \
                             --private-key=$ANSIBLE_KEY \
                             -e target_env=${target} \
-                            -e image_tar=$IMAGE_TAR
+                            -e image_name=$ECR_URI:${env.BRANCH_NAME}
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
@@ -71,7 +71,7 @@ pipeline {
 
     post {
         success {
-            echo "Build, test, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
+            echo "Build, test, push to ECR, and deployment completed successfully on branch ${env.BRANCH_NAME}!"
         }
         failure {
             echo "Pipeline failed on branch ${env.BRANCH_NAME}. Check Jenkins console for details."
