@@ -43,9 +43,9 @@ pipeline {
                 )]) {
                     sh """
                         aws ecr get-login-password --region eu-central-1 | \
-                        docker login --username AWS --password-stdin 381492070404.dkr.ecr.eu-central-1.amazonaws.com
-                        docker tag $DOCKER_IMAGE $ECR_URI:${env.BRANCH_NAME}
-                        docker push $ECR_URI:${env.BRANCH_NAME}
+                        sudo docker login --username AWS --password-stdin 381492070404.dkr.ecr.eu-central-1.amazonaws.com
+                        sudo docker tag $DOCKER_IMAGE $ECR_URI:${env.BRANCH_NAME}
+                        sudo docker push $ECR_URI:${env.BRANCH_NAME}
                     """
                 }
             }
