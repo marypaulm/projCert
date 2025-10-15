@@ -1,11 +1,17 @@
-# Use official PHP image with Apache
-FROM php:8.2-apache
+# Use the project-required base image
+FROM devopsedu/webapp
 
-# Copy website files into the container
+# Copy website files into container
 COPY . /var/www/html/
 
-# Expose port 80
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/html
+
+# Expose HTTP port
 EXPOSE 80
 
-# Start Apache in the foreground
+# Set working directory
+WORKDIR /var/www/html
+
+# Start Apache in foreground (already included in base image)
 CMD ["apache2-foreground"]
