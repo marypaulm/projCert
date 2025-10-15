@@ -47,7 +47,8 @@ pipeline {
                             $ANSIBLE_PLAYBOOK \
                             --limit ${target} \
                             -u $ANSIBLE_USER \
-                            --private-key=$ANSIBLE_KEY
+                            --private-key=$ANSIBLE_KEY \
+                            -e target_env=${target}
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
