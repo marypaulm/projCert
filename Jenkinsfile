@@ -1,13 +1,14 @@
 pipeline {
-    agent any
+    agent { label 'php-slave' }
 
     environment {
-        DOCKER_IMAGE = "php-app:latest"
+        DOCKER_IMAGE = "php-app:${env.BRANCH_NAME}"
         REPO_URL = "https://github.com/marypaulm/projCert.git"
 
-        // Ansible
         ANSIBLE_INVENTORY = "/home/ubuntu/ansible/hosts"
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
+        ANSIBLE_KEY = "/home/ubuntu/.ssh/terraform-ec2-key.pem"
+        ANSIBLE_USER = "ubuntu"
     }
 
     stages {
@@ -21,29 +22,33 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image from website folder..."
-                sh 'docker build -t $DOCKER_IMAGE ./website'
+                sh 'sudo docker build -t $DOCKER_IMAGE ./website'
             }
         }
 
         stage('Test Docker Image') {
             steps {
                 echo "Running test container to verify PHP..."
-                sh 'docker run --rm $DOCKER_IMAGE php -v'
+                sh 'sudo docker run --rm $DOCKER_IMAGE php -v'
             }
         }
 
         stage('Deploy via Ansible') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'dev') {
-                        echo "Deploying to DEV server"
-                        sh "ansible-playbook -i $ANSIBLE_INVENTORY $ANSIBLE_PLAYBOOK --limit dev"
-                    } else if (env.BRANCH_NAME == 'stage') {
-                        echo "Deploying to STAGE server"
-                        sh "ansible-playbook -i $ANSIBLE_INVENTORY $ANSIBLE_PLAYBOOK --limit stage"
-                    } else if (env.BRANCH_NAME == 'master') {
-                        echo "Deploying to PROD server"
-                        sh "ansible-playbook -i $ANSIBLE_INVENTORY $ANSIBLE_PLAYBOOK --limit prod"
+                    // Map branch names to inventory groups
+                    def envMap = ['dev':'dev', 'stage':'stage', 'master':'prod']
+                    def target = envMap[env.BRANCH_NAME]
+
+                    if (target) {
+                        echo "Deploying to ${target.toUpperCase()} server"
+                        sh """
+                            ansible-playbook -i $ANSIBLE_INVENTORY \
+                            $ANSIBLE_PLAYBOOK \
+                            --limit ${target} \
+                            -u $ANSIBLE_USER \
+                            --private-key=$ANSIBLE_KEY
+                        """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
                     }
