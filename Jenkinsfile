@@ -9,6 +9,7 @@ pipeline {
         ANSIBLE_PLAYBOOK = "/home/ubuntu/ansible/jenkins-slave-configurations.yml"
         ANSIBLE_KEY = "/home/ubuntu/.ssh/terraform-ec2-key.pem"
         ANSIBLE_USER = "ubuntu"
+        HOST_PORT = "8080"   // Add host port for container mapping
     }
 
     stages {
@@ -66,7 +67,8 @@ pipeline {
                             -u $ANSIBLE_USER \
                             --private-key=$ANSIBLE_KEY \
                             -e target_env=${target} \
-                            -e image_name=$ECR_URI:${env.BRANCH_NAME}
+                            -e image_name=$ECR_URI:${env.BRANCH_NAME} \
+                            -e host_port=$HOST_PORT
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
