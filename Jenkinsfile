@@ -21,7 +21,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    env.DOCKER_IMAGE = "php-app:${env.BRANCH_NAME == 'master' ? 'prod' : env.BRANCH_NAME}"
+                    // Map master branch to prod, otherwise use branch name
+                    env.DOCKER_TAG = env.BRANCH_NAME == 'master' ? 'prod' : env.BRANCH_NAME
+                    env.DOCKER_IMAGE = "php-app:${env.DOCKER_TAG}"
                     echo "Building Docker image: ${env.DOCKER_IMAGE}"
                 }
                 sh "sudo docker build -t $DOCKER_IMAGE ./website"
@@ -46,8 +48,8 @@ pipeline {
                     sh """
                         aws ecr get-login-password --region eu-central-1 | \
                         sudo docker login --username AWS --password-stdin $ECR_URI
-                        sudo docker tag $DOCKER_IMAGE $ECR_URI:$DOCKER_IMAGE
-                        sudo docker push $ECR_URI:$DOCKER_IMAGE
+                        sudo docker tag $DOCKER_IMAGE $ECR_URI:${env.DOCKER_TAG}
+                        sudo docker push $ECR_URI:${env.DOCKER_TAG}
                     """
                 }
             }
@@ -69,7 +71,7 @@ pipeline {
                             -u $ANSIBLE_USER \
                             --private-key=$ANSIBLE_KEY \
                             -e target_env=${target} \
-                            -e image_name=$ECR_URI:$DOCKER_IMAGE
+                            -e image_name=$ECR_URI:${env.DOCKER_TAG}
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
