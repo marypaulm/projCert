@@ -46,8 +46,11 @@ pipeline {
                     passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                 )]) {
                     sh """
+                        # Login to ECR
                         aws ecr get-login-password --region eu-central-1 | \
                         sudo docker login --username AWS --password-stdin $ECR_URI
+
+                        # Tag and push the image
                         sudo docker tag $DOCKER_IMAGE $ECR_URI:${env.DOCKER_TAG}
                         sudo docker push $ECR_URI:${env.DOCKER_TAG}
                     """
