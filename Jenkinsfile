@@ -2,7 +2,6 @@ pipeline {
     agent { label 'php-slave' }
 
     environment {
-        DOCKER_IMAGE = "php-app:${env.BRANCH_NAME}"
         REPO_URL = "https://github.com/marypaulm/projCert.git"
         ECR_URI = "381492070404.dkr.ecr.eu-central-1.amazonaws.com/php-app"
         ANSIBLE_INVENTORY = "/home/ubuntu/ansible/hosts"
@@ -21,7 +20,12 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image from website folder..."
+                script {
+                    // Map master branch to prod, otherwise use branch name
+                    env.DOCKER_TAG = env.BRANCH_NAME == 'master' ? 'prod' : env.BRANCH_NAME
+                    env.DOCKER_IMAGE = "php-app:${env.DOCKER_TAG}"
+                    echo "Building Docker image: ${env.DOCKER_IMAGE}"
+                }
                 sh "sudo docker build -t $DOCKER_IMAGE ./website"
             }
         }
@@ -43,9 +47,9 @@ pipeline {
                 )]) {
                     sh """
                         aws ecr get-login-password --region eu-central-1 | \
-                        sudo docker login --username AWS --password-stdin 381492070404.dkr.ecr.eu-central-1.amazonaws.com
-                        sudo docker tag $DOCKER_IMAGE $ECR_URI:${env.BRANCH_NAME}
-                        sudo docker push $ECR_URI:${env.BRANCH_NAME}
+                        sudo docker login --username AWS --password-stdin $ECR_URI
+                        sudo docker tag $DOCKER_IMAGE $ECR_URI:${env.DOCKER_TAG}
+                        sudo docker push $ECR_URI:${env.DOCKER_TAG}
                     """
                 }
             }
@@ -54,11 +58,12 @@ pipeline {
         stage('Deploy via Ansible') {
             steps {
                 script {
+                    // Map Git branches to Ansible inventory groups
                     def envMap = ['dev':'dev', 'stage':'stage', 'master':'prod']
                     def target = envMap[env.BRANCH_NAME]
 
                     if (target) {
-                        echo "Deploying to ${target.toUpperCase()} server(s)"
+                        echo "Deploying to ${target.toUpperCase()} server(s)..."
                         sh """
                             ansible-playbook -i $ANSIBLE_INVENTORY \
                             $ANSIBLE_PLAYBOOK \
@@ -66,7 +71,7 @@ pipeline {
                             -u $ANSIBLE_USER \
                             --private-key=$ANSIBLE_KEY \
                             -e target_env=${target} \
-                            -e image_name=$ECR_URI:${env.BRANCH_NAME}
+                            -e image_name=$ECR_URI:${env.DOCKER_TAG}
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
