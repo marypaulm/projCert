@@ -1,20 +1,17 @@
-# Use the project-required base image
-FROM devopsedu/webapp
-
-# Remove Apache's default index page to avoid conflicts
-RUN rm -rf /var/www/html/*
-
-# Copy website files into container
-COPY . /var/www/html/
-
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html
-
-# Expose HTTP port
-EXPOSE 80
+# Use official PHP image with CLI
+FROM php:7.4-cli
 
 # Set working directory
 WORKDIR /var/www/html
+
+# Copy website files
+COPY . /var/www/html/
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html
+
+# Expose port
+EXPOSE 80
 
 # Start PHP built-in server
 CMD ["php", "-S", "0.0.0.0:80", "-t", "."]
