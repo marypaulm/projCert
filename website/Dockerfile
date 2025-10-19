@@ -1,11 +1,6 @@
-FROM php:7.4-apache
-
+FROM php:7.4-cli
 WORKDIR /var/www/html
 COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html
-
-# Expose HTTP
 EXPOSE 80
-
-# Start Apache in foreground
-CMD ["apache2-foreground"]
+CMD ["php", "-S", "0.0.0.0:80", "-t", "."]
