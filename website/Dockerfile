@@ -16,5 +16,5 @@ EXPOSE 80
 # Set working directory
 WORKDIR /var/www/html
 
-# Start Apache in foreground (already included in base image)
-CMD ["apache2-foreground"]
+# Start PHP built-in server
+CMD ["php", "-S", "0.0.0.0:80", "-t", "."]
