@@ -1,6 +1,9 @@
 # Use the project-required base image
 FROM devopsedu/webapp
 
+# Remove Apache's default index page to avoid conflicts
+RUN rm -rf /var/www/html/*
+
 # Copy website files into container
 COPY . /var/www/html/
 
