@@ -26,19 +26,14 @@ pipeline {
                     env.DOCKER_IMAGE = "php-app:${env.DOCKER_TAG}"
                     echo "Building Docker image: ${env.DOCKER_IMAGE}"
                 }
-                sh "sudo docker build --no-cache --pull -t $DOCKER_IMAGE ./website"
+                sh "sudo docker build -t $DOCKER_IMAGE ./website"
             }
         }
 
         stage('Test Docker Image') {
             steps {
                 echo "Running test container to verify PHP..."
-                sh """
-                    # Remove any existing test container
-                    docker rm -f php-test || true
-                    # Run new test container
-                    docker run --name php-test --rm $DOCKER_IMAGE php -v
-                """
+                sh "sudo docker run --rm $DOCKER_IMAGE php -v"
             }
         }
 
@@ -51,11 +46,8 @@ pipeline {
                     passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                 )]) {
                     sh """
-                        # Login to ECR
                         aws ecr get-login-password --region eu-central-1 | \
                         sudo docker login --username AWS --password-stdin $ECR_URI
-
-                        # Tag and push the image
                         sudo docker tag $DOCKER_IMAGE $ECR_URI:${env.DOCKER_TAG}
                         sudo docker push $ECR_URI:${env.DOCKER_TAG}
                     """
@@ -66,6 +58,7 @@ pipeline {
         stage('Deploy via Ansible') {
             steps {
                 script {
+                    // Map Git branches to Ansible inventory groups
                     def envMap = ['dev':'dev', 'stage':'stage', 'master':'prod']
                     def target = envMap[env.BRANCH_NAME]
 
@@ -78,8 +71,7 @@ pipeline {
                             -u $ANSIBLE_USER \
                             --private-key=$ANSIBLE_KEY \
                             -e target_env=${target} \
-                            -e image_name=$ECR_URI:${env.DOCKER_TAG} \
-                            -e force_update=true
+                            -e image_name=$ECR_URI:${env.DOCKER_TAG}
                         """
                     } else {
                         echo "Branch ${env.BRANCH_NAME} is not mapped to any environment. Skipping deploy."
