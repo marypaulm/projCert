@@ -11,10 +11,26 @@ pipeline {
     }
 
     stages {
+        stage('Cleanup') {
+            steps {
+                echo "Cleaning workspace to ensure no stale files..."
+                deleteDir()
+            }
+        }
+
         stage('Checkout') {
             steps {
                 echo "Checking out branch: ${env.BRANCH_NAME}"
-                git branch: "${env.BRANCH_NAME}", url: "${REPO_URL}"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "refs/heads/${env.BRANCH_NAME}"]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'WipeWorkspace']], // Ensures workspace is clean
+                    userRemoteConfigs: [[
+                        url: "${REPO_URL}",
+                        credentialsId: 'multibranchcredentials'
+                    ]]
+                ])
             }
         }
 
