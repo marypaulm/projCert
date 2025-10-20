@@ -1,6 +1,17 @@
-FROM php:7.4-cli
-WORKDIR /var/www/html
+# Use the project-required base image
+FROM devopsedu/webapp
+
+# Copy website files into container
 COPY . /var/www/html/
+
+# Set correct permissions
 RUN chown -R www-data:www-data /var/www/html
+
+# Expose HTTP port
 EXPOSE 80
-CMD ["php", "-S", "0.0.0.0:80", "-t", "."]
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Start Apache in foreground (already included in base image)
+CMD ["apache2-foreground"]
