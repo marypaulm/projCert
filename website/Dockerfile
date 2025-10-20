@@ -1,13 +1,13 @@
 FROM devopsedu/webapp
 
-# Copy website files into container
+# Remove default Apache index.html 
+RUN rm -f /var/www/html/index.html
+
+# Copy your website files into the container
 COPY . /var/www/html/
 
-# Install Apache and set permissions, remove default Apache index.html
-RUN apt-get update && \
-    apt-get install -y apache2 && \
-    rm -f /var/www/html/index.html && \
-    chown -R www-data:www-data /var/www/html
+# Set proper ownership and permissions
+RUN chown -R www-data:www-data /var/www/html
 
 # Expose HTTP port
 EXPOSE 80
